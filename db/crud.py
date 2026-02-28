@@ -103,14 +103,29 @@ async def toggle_link_active(link_id: int, is_active: bool) -> None:
 
 
 async def update_link_price(link_id: int, price: int) -> None:
-    """Update the cached last_price and last_checked timestamp on a link."""
+    """Update the cached last_price, last_checked timestamp, and reset fail_count."""
     db = await get_db()
     now = datetime.now(timezone.utc).isoformat()
     await db.execute(
-        "UPDATE product_links SET last_price = ?, last_checked = ? WHERE id = ?",
+        "UPDATE product_links SET last_price = ?, last_checked = ?, fail_count = 0 WHERE id = ?",
         (price, now, link_id),
     )
     await db.commit()
+
+
+async def increment_link_fail_count(link_id: int) -> int:
+    """Increment fail_count and update last_checked. Return new fail_count."""
+    db = await get_db()
+    now = datetime.now(timezone.utc).isoformat()
+    await db.execute(
+        "UPDATE product_links SET fail_count = fail_count + 1, last_checked = ? WHERE id = ?",
+        (now, link_id),
+    )
+    await db.commit()
+    
+    # Return updated count
+    row = await db.execute_fetchall("SELECT fail_count FROM product_links WHERE id = ?", (link_id,))
+    return int(row[0]["fail_count"]) if row else 0
 
 
 # ---------------------------------------------------------------------------

@@ -87,18 +87,25 @@ async def create_stealth_context(*, cookies: list[dict] | None = None):
 
     Returns (context, page) tuple. Caller must close the context when done.
     """
+    import random
     from playwright_stealth import Stealth
+
+    # Pool of modern User-Agents to rotate
+    # This prevents anti-bot systems from fingerprinting a single static UA over time
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15"
+    ]
 
     browser = await get_browser()
     stealth = Stealth()
 
     context = await browser.new_context(
         viewport={"width": 1366, "height": 768},
-        user_agent=(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        ),
+        user_agent=random.choice(USER_AGENTS),
         locale="id-ID",
         timezone_id="Asia/Jakarta",
     )

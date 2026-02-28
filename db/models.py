@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS product_links (
     selector    TEXT,
     is_active   INTEGER NOT NULL DEFAULT 1,
     last_checked TEXT,
-    last_price  INTEGER
+    last_price  INTEGER,
+    fail_count  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS price_history (

@@ -172,11 +172,30 @@ async def _process_link(bot: Bot, link_data: dict[str, Any]) -> None:
 
     if new_price is None:
         logger.warning("Failed to fetch price for link #%s (%s)", link_id, url)
-        # Still update last_checked to avoid retrying repeatedly
-        await crud.update_link_price(link_id, old_price or 0)
+        fail_count = await crud.increment_link_fail_count(link_id)
+        if fail_count == 3:
+            try:
+                alert_text = (
+                    f"⚠️ <b>Gagal Mengecek Harga</b> ⚠️\n\n"
+                    f"Produk <b>{product_name}</b> di {platform.title()} "
+                    f"telah gagal diakses sebanyak 3 kali berturut-turut.\n\n"
+                    f"Mungkin link sudah tidak valid atau produk dihapus.\n"
+                    f"🔗 <a href=\"{url}\">Cek Link Manual</a>"
+                )
+                await bot.send_message(user_id, alert_text, parse_mode="HTML")
+            except Exception:
+                pass
         return
 
-    # Record price & update link cache
+    # Anomaly detection: if new price is dropped by > 80% (meaning it is < 20% of old_price), ignore it
+    if old_price is not None and new_price < (old_price * 0.2):
+        logger.warning(
+            "Anomaly detected for link #%s. Old: %s, New: %s (Drop > 80%%). Ignoring.",
+            link_id, old_price, new_price
+        )
+        return
+
+    # Record price & update link cache (resets fail_count)
     await crud.record_price(link_id, new_price, price_result.source)
     await crud.update_link_price(link_id, new_price)
 

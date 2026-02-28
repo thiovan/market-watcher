@@ -21,8 +21,9 @@ def setup_logging() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    # Reduce noise from libraries
+    # Reduce noise from libraries and hide token traces
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("aiogram.event").setLevel(logging.WARNING)
     logging.getLogger("aiogram").setLevel(logging.INFO)
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
 

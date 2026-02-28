@@ -19,12 +19,14 @@ async def init_db() -> None:
     _db = await aiosqlite.connect(str(db_path))
     _db.row_factory = aiosqlite.Row
     await _db.execute("PRAGMA journal_mode=WAL")
+    await _db.execute("PRAGMA synchronous=NORMAL")
     await _db.execute("PRAGMA foreign_keys=ON")
     await _db.executescript(SCHEMA_SQL)
     await _db.commit()
 
-    # Migration: add 'source' column to price_history if missing
+    # Migrations
     try:
+        # price_history: source column
         cursor = await _db.execute("PRAGMA table_info(price_history)")
         columns = [row[1] for row in await cursor.fetchall()]
         if "source" not in columns:
@@ -33,6 +35,16 @@ async def init_db() -> None:
             )
             await _db.commit()
             logging.getLogger(__name__).info("Migrated: added 'source' column to price_history")
+
+        # product_links: fail_count column
+        cursor = await _db.execute("PRAGMA table_info(product_links)")
+        columns = [row[1] for row in await cursor.fetchall()]
+        if "fail_count" not in columns:
+            await _db.execute(
+                "ALTER TABLE product_links ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0"
+            )
+            await _db.commit()
+            logging.getLogger(__name__).info("Migrated: added 'fail_count' column to product_links")
     except Exception:
         pass
 

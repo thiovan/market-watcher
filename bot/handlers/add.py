@@ -75,6 +75,26 @@ async def receive_link(message: Message, state: FSMContext) -> None:
         )
         return
 
+    # Security: SSRF Prevention
+    # Ensure URL is explicitly from Tokopedia or Shopee
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        if not (domain.endswith("tokopedia.com") or domain == "tokopedia.com" or 
+                domain.endswith("shopee.co.id") or domain == "shopee.co.id"):
+            await message.answer(
+                "❌ <b>URL Tidak Didukung</b>\n\n"
+                "Saat ini bot hanya mendukung link dari:\n"
+                "• <b>Tokopedia</b> (tokopedia.com)\n"
+                "• <b>Shopee</b> (shopee.co.id)\n\n"
+                "Silakan kirim URL yang benar:",
+                parse_mode="HTML",
+            )
+            return
+    except Exception:
+        pass
+
     platform = detect_platform(url)
     data = await state.get_data()
     links: list[dict] = data.get("links", [])
