@@ -152,7 +152,29 @@ python -m pytest tests/ -v
 
 ## 📋 Deployment (VPS)
 
-### Systemd Service
+### 1. Install System Dependencies (Chromium)
+
+Playwright membutuhkan shared libraries untuk menjalankan Chromium. Jalankan:
+
+```bash
+# Otomatis install semua dependencies Chromium
+playwright install-deps chromium
+
+# Atau install manual jika perintah di atas gagal:
+sudo apt-get update && sudo apt-get install -y \
+    libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 \
+    libgbm1 libpango-1.0-0 libcairo2 libasound2 libnspr4 libnss3 \
+    libxshmfence1 xvfb
+```
+
+Lalu install Chromium browser:
+
+```bash
+playwright install chromium
+```
+
+### 2. Systemd Service
 
 ```bash
 sudo nano /etc/systemd/system/market-watcher.service
@@ -165,11 +187,12 @@ After=network.target
 
 [Service]
 Type=simple
-User=your-user
-WorkingDirectory=/path/to/market-watcher
-ExecStart=/path/to/market-watcher/.venv/bin/python run.py
+User=root
+WorkingDirectory=/root/market-watcher
+ExecStart=/root/market-watcher/.venv/bin/python run.py
 Restart=always
 RestartSec=10
+Environment=DISPLAY=:99
 
 [Install]
 WantedBy=multi-user.target
@@ -180,17 +203,8 @@ sudo systemctl enable market-watcher
 sudo systemctl start market-watcher
 ```
 
-### VPS tanpa Display (headless server)
-
-Playwright membutuhkan display. Untuk VPS tanpa GUI:
-
-```bash
-sudo apt install xvfb
-xvfb-run python run.py
-```
-
-Atau tambahkan ke systemd service:
-
-```ini
-ExecStart=/usr/bin/xvfb-run /path/to/.venv/bin/python run.py
-```
+> **Note:** Jika Chromium membutuhkan display (error "no display"), gunakan `xvfb-run`:
+>
+> ```ini
+> ExecStart=/usr/bin/xvfb-run /root/market-watcher/.venv/bin/python run.py
+> ```

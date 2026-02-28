@@ -57,6 +57,7 @@ async def get_browser():
                     "--disable-background-networking",
                     "--disable-default-apps",
                     "--disable-sync",
+                    "--disable-http2",
                     "--no-first-run",
                 ],
             )
@@ -69,6 +70,7 @@ async def get_browser():
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
+                    "--disable-http2",
                 ],
             )
 

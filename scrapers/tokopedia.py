@@ -48,7 +48,17 @@ class TokopediaScraper(BaseScraper):
                 mode = "cookies" if use_cookies and cookies else "no_cookies"
                 logger.info("Loading Tokopedia [%s]: %s", mode, url[:80])
 
-                await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                # Navigate with retry (VPS networks can be flaky)
+                for attempt in range(2):
+                    try:
+                        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                        break
+                    except Exception as nav_err:
+                        if attempt == 0:
+                            logger.warning("Tokopedia nav retry: %s", str(nav_err)[:80])
+                            await asyncio.sleep(2)
+                        else:
+                            raise
 
                 # Smart wait: look for price element instead of fixed sleep
                 try:

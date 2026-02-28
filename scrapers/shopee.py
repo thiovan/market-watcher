@@ -48,8 +48,13 @@ class ShopeeScraper(BaseScraper):
 
                 try:
                     await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                except Exception:
-                    logger.warning("Shopee navigation timeout")
+                except Exception as nav_err:
+                    logger.warning("Shopee nav retry: %s", str(nav_err)[:80])
+                    await asyncio.sleep(2)
+                    try:
+                        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    except Exception:
+                        logger.warning("Shopee navigation failed")
 
                 # Smart wait: Shopee renders variant/shipping prices first.
                 # Look for a price ≥ 1M (7+ digits) which indicates product price area is loaded.
