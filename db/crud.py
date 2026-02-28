@@ -14,7 +14,7 @@ from db.database import get_db
 # Products
 # ---------------------------------------------------------------------------
 
-async def add_product(name: str, user_id: int, interval: int = 240) -> int:
+async def add_product(name: str, user_id: int, interval: int = 30) -> int:
     """Insert a product and return its id."""
     db = await get_db()
     cursor = await db.execute(

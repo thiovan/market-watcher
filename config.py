@@ -17,7 +17,7 @@ class Settings:
 
     bot_token: str = field(repr=False, default="")
     admin_user_id: int = 0
-    check_interval_minutes: int = 240
+    check_interval_minutes: int = 15
     database_path: str = "data/market_watcher.db"
 
     # Scraping settings
@@ -32,7 +32,7 @@ class Settings:
         return cls(
             bot_token=os.getenv("BOT_TOKEN", ""),
             admin_user_id=int(os.getenv("ADMIN_USER_ID", "0")),
-            check_interval_minutes=int(os.getenv("CHECK_INTERVAL_MINUTES", "240")),
+            check_interval_minutes=int(os.getenv("CHECK_INTERVAL_MINUTES", "15")),
             database_path=os.getenv("DATABASE_PATH", "data/market_watcher.db"),
             headless=os.getenv("HEADLESS", "false").lower() != "false",
             request_delay_seconds=float(os.getenv("SCRAPE_DELAY_SECONDS", "10")),

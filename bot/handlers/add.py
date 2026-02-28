@@ -212,7 +212,7 @@ async def _save_product(callback: CallbackQuery, state: FSMContext) -> None:
     rules = data.get("alert_rules", [])
 
     try:
-        product_id = await crud.add_product(name, user_id)
+        product_id = await crud.add_product(name, user_id, interval=120)
 
         for link in links:
             await crud.add_product_link(product_id, link["url"], link["platform"])

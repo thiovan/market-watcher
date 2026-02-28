@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS products (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT    NOT NULL,
     user_telegram_id  INTEGER NOT NULL,
-    check_interval_minutes INTEGER NOT NULL DEFAULT 240,
+    check_interval_minutes INTEGER NOT NULL DEFAULT 15,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
