@@ -21,7 +21,8 @@ class Settings:
     database_path: str = "data/market_watcher.db"
 
     # Scraping settings
-    request_delay_seconds: float = 2.5
+    request_delay_seconds: float = 10.0
+    batch_delay_seconds: float = 30.0
     max_links_per_cycle: int = 20
     headless: bool = True
 
@@ -34,6 +35,8 @@ class Settings:
             check_interval_minutes=int(os.getenv("CHECK_INTERVAL_MINUTES", "240")),
             database_path=os.getenv("DATABASE_PATH", "data/market_watcher.db"),
             headless=os.getenv("HEADLESS", "true").lower() != "false",
+            request_delay_seconds=float(os.getenv("SCRAPE_DELAY_SECONDS", "10")),
+            batch_delay_seconds=float(os.getenv("SCRAPE_BATCH_DELAY_SECONDS", "30")),
         )
 
     def validate(self) -> None:

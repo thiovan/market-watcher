@@ -124,9 +124,25 @@ async def check_prices_job(bot: Bot) -> None:
             logger.debug("No links due for check.")
             return
 
-        logger.info("Checking prices for %d links...", len(links))
+        logger.info(
+            "Checking prices for %d links (delay: %.0fs between links, %.0fs between products)...",
+            len(links), settings.request_delay_seconds, settings.batch_delay_seconds,
+        )
 
-        for link_data in links:
+        # Group links by product for batch delay
+        prev_product_id = None
+        for i, link_data in enumerate(links):
+            current_product_id = link_data.get("product_id")
+
+            # Batch delay between different products (let CPU cool down)
+            if prev_product_id is not None and current_product_id != prev_product_id:
+                logger.debug("Batch delay: %.0fs between products", settings.batch_delay_seconds)
+                await asyncio.sleep(settings.batch_delay_seconds)
+            elif i > 0:
+                # Delay between links within the same product
+                logger.debug("Link delay: %.0fs", settings.request_delay_seconds)
+                await asyncio.sleep(settings.request_delay_seconds)
+
             try:
                 await _process_link(bot, link_data)
             except Exception:
@@ -136,8 +152,7 @@ async def check_prices_job(bot: Bot) -> None:
                     link_data["url"],
                 )
 
-            # Rate limiting: delay between requests
-            await asyncio.sleep(settings.request_delay_seconds)
+            prev_product_id = current_product_id
 
     finally:
         _is_running = False
