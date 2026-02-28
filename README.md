@@ -189,10 +189,9 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/root/market-watcher
-ExecStart=/root/market-watcher/.venv/bin/python run.py
+ExecStart=/usr/bin/xvfb-run /root/market-watcher/.venv/bin/python run.py
 Restart=always
 RestartSec=10
-Environment=DISPLAY=:99
 
 [Install]
 WantedBy=multi-user.target
@@ -203,8 +202,4 @@ sudo systemctl enable market-watcher
 sudo systemctl start market-watcher
 ```
 
-> **Note:** Jika Chromium membutuhkan display (error "no display"), gunakan `xvfb-run`:
->
-> ```ini
-> ExecStart=/usr/bin/xvfb-run /root/market-watcher/.venv/bin/python run.py
-> ```
+> **Kenapa xvfb-run?** Default `HEADLESS=false` menggunakan Chromium penuh (bukan `chrome-headless-shell`) yang jauh lebih sulit diblokir anti-bot. `xvfb-run` menyediakan display virtual agar Chromium bisa jalan tanpa monitor.
