@@ -1,0 +1,134 @@
+"""Shared Playwright browser singleton for efficient resource usage.
+
+Instead of launching a new Chromium process per fetch (~150MB each),
+this module maintains a single reusable browser instance.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+_browser = None
+_playwright = None
+_lock = asyncio.Lock()
+
+
+async def get_browser():
+    """Get or create the shared Chromium browser instance."""
+    global _browser, _playwright
+
+    async with _lock:
+        # Return existing if alive
+        if _browser is not None and _browser.is_connected():
+            return _browser
+
+        # Clean up dead instance
+        if _browser is not None:
+            try:
+                await _browser.close()
+            except Exception:
+                pass
+            _browser = None
+
+        if _playwright is not None:
+            try:
+                await _playwright.stop()
+            except Exception:
+                pass
+            _playwright = None
+
+        # Launch new
+        from playwright.async_api import async_playwright
+        _playwright = await async_playwright().start()
+
+        try:
+            _browser = await _playwright.chromium.launch(
+                headless=True,
+                channel="chrome",
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--disable-extensions",
+                    "--disable-background-networking",
+                    "--disable-default-apps",
+                    "--disable-sync",
+                    "--no-first-run",
+                ],
+            )
+        except Exception:
+            # Fallback to bundled Chromium
+            _browser = await _playwright.chromium.launch(
+                headless=True,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
+            )
+
+        logger.info("Playwright browser launched (singleton)")
+        return _browser
+
+
+async def create_stealth_context(*, cookies: list[dict] | None = None):
+    """Create a new browser context with stealth applied.
+
+    Returns (context, page) tuple. Caller must close the context when done.
+    """
+    from playwright_stealth import Stealth
+
+    browser = await get_browser()
+    stealth = Stealth()
+
+    context = await browser.new_context(
+        viewport={"width": 1366, "height": 768},
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        locale="id-ID",
+        timezone_id="Asia/Jakarta",
+    )
+
+    if cookies:
+        await context.add_cookies(cookies)
+
+    page = await context.new_page()
+    await stealth.apply_stealth_async(page)
+
+    # Block heavy resources to save memory & bandwidth
+    await page.route(
+        "**/*.{png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,mp4,webm,webp}",
+        lambda route: route.abort(),
+    )
+
+    return context, page
+
+
+async def close_browser() -> None:
+    """Gracefully close the shared browser instance."""
+    global _browser, _playwright
+
+    async with _lock:
+        if _browser is not None:
+            try:
+                await _browser.close()
+            except Exception:
+                pass
+            _browser = None
+
+        if _playwright is not None:
+            try:
+                await _playwright.stop()
+            except Exception:
+                pass
+            _playwright = None
+
+        logger.info("Playwright browser closed")
