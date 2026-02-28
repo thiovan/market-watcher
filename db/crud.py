@@ -105,7 +105,8 @@ async def toggle_link_active(link_id: int, is_active: bool) -> None:
 async def update_link_price(link_id: int, price: int) -> None:
     """Update the cached last_price, last_checked timestamp, and reset fail_count."""
     db = await get_db()
-    now = datetime.now(timezone.utc).isoformat()
+    # Format YYYY-MM-DD HH:MM:SS for SQLite datetime() compatibility (dropping +00:00)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db.execute(
         "UPDATE product_links SET last_price = ?, last_checked = ?, fail_count = 0 WHERE id = ?",
         (price, now, link_id),
@@ -116,7 +117,7 @@ async def update_link_price(link_id: int, price: int) -> None:
 async def increment_link_fail_count(link_id: int) -> int:
     """Increment fail_count and update last_checked. Return new fail_count."""
     db = await get_db()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db.execute(
         "UPDATE product_links SET fail_count = fail_count + 1, last_checked = ? WHERE id = ?",
         (now, link_id),
