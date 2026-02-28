@@ -1,12 +1,6 @@
-"""Tokopedia price scraper — Playwright + stealth with cookie support.
-
-Uses shared browser singleton and playwright-stealth.
-If cookies are available (set via /setcookies tokopedia), they're injected
-for better reliability. Falls back to no-cookies if unavailable.
-"""
-
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -51,12 +45,12 @@ class TokopediaScraper(BaseScraper):
                 # Navigate with retry (VPS networks can be flaky)
                 for attempt in range(2):
                     try:
-                        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                        await page.goto(url, wait_until="commit", timeout=45000)
                         break
                     except Exception as nav_err:
                         if attempt == 0:
                             logger.warning("Tokopedia nav retry: %s", str(nav_err)[:80])
-                            await asyncio.sleep(2)
+                            await asyncio.sleep(3)
                         else:
                             raise
 
