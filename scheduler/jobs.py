@@ -260,7 +260,7 @@ async def _evaluate_alerts(
 
         elif rule_type == "HISTORICAL_LOW":
             lowest = await crud.get_lowest_price(link_id)
-            if lowest is not None and new_price <= lowest:
+            if lowest is not None and new_price < lowest:
                 should_notify = True
                 alert_text = (
                     f"📉 <b>REKOR HARGA TERENDAH!</b> 📉\n\n"
