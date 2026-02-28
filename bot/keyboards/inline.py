@@ -79,6 +79,7 @@ def interval_keyboard(product_id: int) -> InlineKeyboardMarkup:
     intervals = [
         ("30 Menit", 30),
         ("1 Jam", 60),
+        ("2 Jam", 120),
         ("4 Jam", 240),
         ("12 Jam", 720),
         ("24 Jam", 1440),

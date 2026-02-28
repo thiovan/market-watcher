@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
 from bot.keyboards.inline import watchlist_item_keyboard
+from bot.handlers.check_history import _format_local_time
 from db import crud
 
 logger = logging.getLogger(__name__)
@@ -48,10 +50,37 @@ async def cmd_list(message: Message) -> None:
         prices_text = "\n".join(prices_parts) if prices_parts else "  <i>Belum ada data harga</i>"
         interval = product.get("check_interval_minutes", 240)
 
+        # Calculate next check time
+        oldest_check = None
+        for link in links:
+            ts_str = link.get("last_checked")
+            if ts_str:
+                try:
+                    if "T" not in ts_str:
+                        dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    else:
+                        dt = datetime.fromisoformat(ts_str)
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                    if oldest_check is None or dt < oldest_check:
+                        oldest_check = dt
+                except Exception:
+                    pass
+
+        next_str = "<i>Menunggu pengecekan pertama...</i>"
+        if oldest_check is not None:
+            next_dt = oldest_check + timedelta(minutes=interval)
+            now = datetime.now(timezone.utc)
+            if next_dt <= now:
+                next_str = "<b>Segera</b> (dalam antrean)"
+            else:
+                next_str = next_dt.astimezone().strftime("%Y-%m-%d %H:%M")
+
         text = (
             f"<b>{idx}. {product['name']}</b>\n"
             f"{prices_text}\n"
-            f"⏱️ Cek setiap {_fmt_interval(interval)}"
+            f"⏱️ Cek setiap: {_fmt_interval(interval)}\n"
+            f"⏳ Pengecekan selanjutnya: {next_str}"
         )
 
         await message.answer(
