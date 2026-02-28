@@ -42,11 +42,15 @@ async def get_browser():
 
         # Launch new
         from playwright.async_api import async_playwright
+        from config import settings as app_settings
         _playwright = await async_playwright().start()
+
+        headless = app_settings.headless
+        logger.info("Launching Chromium (headless=%s)", headless)
 
         try:
             _browser = await _playwright.chromium.launch(
-                headless=True,
+                headless=headless,
                 channel="chrome",
                 args=[
                     "--disable-blink-features=AutomationControlled",
@@ -64,7 +68,7 @@ async def get_browser():
         except Exception:
             # Fallback to bundled Chromium
             _browser = await _playwright.chromium.launch(
-                headless=True,
+                headless=headless,
                 args=[
                     "--disable-blink-features=AutomationControlled",
                     "--no-sandbox",
