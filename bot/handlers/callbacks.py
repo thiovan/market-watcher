@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
@@ -11,6 +12,20 @@ from bot.keyboards.inline import confirm_delete_keyboard, interval_keyboard
 from db import crud
 
 logger = logging.getLogger(__name__)
+
+def _format_local_time(ts_str: str) -> str:
+    if not ts_str:
+        return "N/A"
+    try:
+        if "T" not in ts_str:
+            dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        else:
+            dt = datetime.fromisoformat(ts_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ts_str[:16].replace("T", " ")
 
 router = Router(name="callbacks")
 
@@ -53,7 +68,11 @@ async def cb_detail(callback: CallbackQuery) -> None:
         if history:
             parts.append("  📈 Riwayat terbaru:")
             for h in history[:5]:
-                parts.append(f"    • {_fmt_price(h['price'])} ({h['checked_at'][:16]})")
+                try:
+                    ts = _format_local_time(h['checked_at'])
+                except Exception:
+                    ts = h['checked_at'][:16].replace("T", " ")
+                parts.append(f"    • {_fmt_price(h['price'])} ({ts})")
 
     if alerts:
         labels = {
@@ -165,7 +184,7 @@ async def cb_history(callback: CallbackQuery) -> None:
         prev_price = None
         for h in reversed(history):
             price = h["price"]
-            ts = h["checked_at"][:16].replace("T", " ")
+            ts = _format_local_time(h["checked_at"])
 
             if prev_price is None:
                 indicator = "🆕"

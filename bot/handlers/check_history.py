@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -12,6 +13,20 @@ from db import crud
 from scheduler.jobs import check_product_links, fmt_price
 
 logger = logging.getLogger(__name__)
+
+def _format_local_time(ts_str: str) -> str:
+    if not ts_str:
+        return "N/A"
+    try:
+        if "T" not in ts_str:
+            dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        else:
+            dt = datetime.fromisoformat(ts_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ts_str[:16].replace("T", " ")
 
 router = Router(name="check_history")
 
@@ -166,7 +181,7 @@ async def cmd_history(message: Message) -> None:
         prev_price = None
         for i, h in enumerate(reversed(history)):  # oldest first
             price = h["price"]
-            ts = h["checked_at"][:16].replace("T", " ")
+            ts = _format_local_time(h["checked_at"])
             source = h.get("source", "no_cookies")
             src_icon = "🍪" if source == "cookies" else "🌐"
 
