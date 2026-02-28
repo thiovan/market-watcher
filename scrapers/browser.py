@@ -109,11 +109,28 @@ async def create_stealth_context(*, cookies: list[dict] | None = None):
     page = await context.new_page()
     await stealth.apply_stealth_async(page)
 
-    # Block heavy resources to save memory & bandwidth
-    await page.route(
-        "**/*.{png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,mp4,webm,webp}",
-        lambda route: route.abort(),
+    # Block heavy resources to save memory, CPU & bandwidth
+    # We block by resource_type instead of extension because many marketplace
+    # images have query params (e.g. ?ect=4g) and don't end in .jpg/.png
+    _BLOCKED_TYPES = {"image", "media", "font", "stylesheet"}
+    _BLOCKED_DOMAINS = (
+        "googletagmanager", "google-analytics", "analytics",
+        "doubleclick.net", "hotjar.com", "sentry.io",
+        "adsense", "tracker", "pixel",
     )
+
+    async def _block_resources(route):
+        req = route.request
+        # Block by resource type (catches all images regardless of URL structure)
+        if req.resource_type in _BLOCKED_TYPES:
+            return await route.abort()
+        # Block known trackers/analytics by domain
+        url = req.url.lower()
+        if any(d in url for d in _BLOCKED_DOMAINS):
+            return await route.abort()
+        await route.continue_()
+
+    await page.route("**/*", _block_resources)
 
     return context, page
 
