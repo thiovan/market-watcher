@@ -196,6 +196,7 @@ async def _process_link(bot: Bot, link_data: dict[str, Any]) -> None:
         return
 
     # Record price & update link cache (resets fail_count)
+    lowest_before = await crud.get_lowest_price(link_id)
     await crud.record_price(link_id, new_price, price_result.source)
     await crud.update_link_price(link_id, new_price)
 
@@ -213,7 +214,7 @@ async def _process_link(bot: Bot, link_data: dict[str, Any]) -> None:
         return
 
     await _evaluate_alerts(bot, link_data["product_id"], link_id, url,
-                           platform, product_name, user_id, old_price, new_price)
+                           platform, product_name, user_id, old_price, new_price, lowest_before)
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +224,7 @@ async def _process_link(bot: Bot, link_data: dict[str, Any]) -> None:
 async def _evaluate_alerts(
     bot: Bot, product_id: int, link_id: int, url: str,
     platform: str, product_name: str, user_id: int,
-    old_price: int, new_price: int,
+    old_price: int, new_price: int, lowest_before: int | None
 ) -> None:
     """Evaluate all alert rules for a link and send notifications."""
     alerts = await crud.get_alerts_by_product(product_id)
@@ -259,14 +260,15 @@ async def _evaluate_alerts(
                 )
 
         elif rule_type == "HISTORICAL_LOW":
-            lowest = await crud.get_lowest_price(link_id)
-            if lowest is not None and new_price < lowest:
+            # trigger if: (new price breaks new absolute record) OR
+            # (new price drops down to exactly the historical lowest price again)
+            if lowest_before is not None and new_price <= lowest_before and new_price < old_price:
                 should_notify = True
                 alert_text = (
                     f"📉 <b>REKOR HARGA TERENDAH!</b> 📉\n\n"
                     f"📦 <b>{product_name}</b> di {platform.title()}\n"
                     f"💰 Harga saat ini: <b>{fmt_price(new_price)}</b>\n"
-                    f"📊 Rekor sebelumnya: {fmt_price(lowest)}\n\n"
+                    f"📊 Rekor sebelumnya: {fmt_price(lowest_before)}\n\n"
                     f"🔗 <a href=\"{url}\">Beli Sekarang</a>"
                 )
 
