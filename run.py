@@ -43,7 +43,10 @@ async def main() -> None:
 
     bot = Bot(
         token=settings.bot_token,
-        default=DefaultBotProperties(parse_mode="HTML"),
+        default=DefaultBotProperties(
+            parse_mode="HTML",
+            link_preview_is_disabled=True,
+        ),
     )
     dp = create_dispatcher()
 
