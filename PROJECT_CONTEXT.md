@@ -24,7 +24,7 @@ To successfully scrape Tokopedia and Shopee on a low-spec VPS (e.g., 1GB RAM) wi
 - **Aggressive Resource Blocking**: The browser aborts requests for `image`, `media`, `font`, and `stylesheet` resource types, as well as known tracker domains (Google Analytics, Hotjar, Sentry, etc.). This prevents downloading heavy product images and saves massive amounts of bandwidth and memory.
 - **Stealth Login (Cookies)**: Users can upload encrypted Tokopedia/Shopee cookies via the `/setcookies` command to bypass strict login walls.
 - **Extraction Logic**:
-  - **Tokopedia**: Prioritizes extracting pure JSON data (`__INITIAL_STATE__`) over DOM parsing. If JSON fails, it falls back to parsing the rendered HTML body or using a TreeWalker to find the largest "Rp" text on the screen.
+  - **Tokopedia**: Prioritizes extracting prices visually from the rendered DOM (using a TreeWalker to find the largest "Rp" text) after a short delay. This ensures dynamically selected URL variants (e.g., `?variant=...` or `-varian-...`) are correctly captured. It uses raw HTML JSON data scraping (`__INITIAL_STATE__`) parsing only as a fallback.
   - **Shopee**: Delays execution slightly to allow Vue/React to render, then uses Regex on the HTML content. If that fails, it uses a TreeWalker to find prices > Rp100,000 to avoid misinterpreting cheap shipping costs or vouchers as the main product price.
 
 ## 3. SQLite Database Optimizations (`db/database.py`, `db/models.py`)
@@ -55,4 +55,5 @@ To prevent the VPS CPU from pinning at 100% when checking dozens of links:
 
 - **Price Anomaly Detection**: If a marketplace glitches and returns a price that is >80% lower than the previously recorded price (e.g., dropping from 1.000.000 to 5.000), the bot identifies it as a scraper anomaly and ignores it. This prevents spamming "Price Drop!" notifications for fake Rp0/Rp99 flash sales.
 - **Consecutive Failure Alerts**: A `fail_count` is tracked per link. If a link fails to scrape 3 times in a row, the bot sends an alert to the user suggesting they check the link manually.
+- **Historical Low Alerts**: Improved logic to trigger not only when breaking absolute records, but also when the price bounces back down to exactly the existing historical low (provided it is actively dropping from the previous check).
 - **Timezone Formatting**: History messages (`/history` and inline callbacks) now correctly convert UTC database timestamps into the VPS server's local machine timezone (`astimezone()`).

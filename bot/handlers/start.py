@@ -9,7 +9,7 @@ from aiogram.types import Message
 router = Router(name="start")
 
 WELCOME_TEXT = """
-🛒 <b>Market Watcher Bot</b>
+🛒 <b>Market Watcher Bot</b> <i>v1.2.0</i>
 
 Selamat datang! Saya adalah bot pelacak harga marketplace.
 Saya akan memantau harga produk dari <b>Tokopedia</b> & <b>Shopee</b> dan mengirim notifikasi saat harga berubah.
@@ -66,9 +66,9 @@ untuk memperbarui selector CSS/XPath.
 """
 
 
-@router.message(Command("start"))
+@router.message(Command("start", "menu"))
 async def cmd_start(message: Message) -> None:
-    """Handle /start command."""
+    """Handle /start and /menu commands."""
     await message.answer(WELCOME_TEXT, parse_mode="HTML")
 
 

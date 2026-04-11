@@ -1,4 +1,4 @@
-# 🛒 Market Watcher Bot
+# 🛒 Market Watcher Bot `v1.2.0`
 
 Bot Telegram untuk memantau harga produk marketplace (Tokopedia & Shopee) secara otomatis. Dioptimalkan untuk VPS berspesifikasi rendah.
 
@@ -65,7 +65,7 @@ python run.py
 
 | Perintah                 | Fungsi                           |
 | ------------------------ | -------------------------------- |
-| `/start`                 | Pesan selamat datang             |
+| `/start`, `/menu`        | Pesan selamat datang             |
 | `/add`                   | Tambah produk baru (multi-step)  |
 | `/list`                  | Lihat watchlist & harga terbaru  |
 | `/check`                 | Cek harga sekarang (manual)      |

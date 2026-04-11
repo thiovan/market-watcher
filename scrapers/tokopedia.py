@@ -60,6 +60,8 @@ class TokopediaScraper(BaseScraper):
                         "() => document.body && document.body.innerText.includes('Rp')",
                         timeout=8000,
                     )
+                    # Add a tiny delay to ensure React has fully rendered the selected variant price
+                    await asyncio.sleep(2)
                 except Exception:
                     pass  # Timeout OK — try extracting anyway
 
@@ -81,16 +83,10 @@ class TokopediaScraper(BaseScraper):
 
     async def _extract_price(self, page) -> int | None:
         """Extract price from rendered Tokopedia page."""
-        # Strategy 1: Embedded JSON data in page source
-        try:
-            content = await page.content()
-            price = self._extract_from_html(content)
-            if price:
-                return price
-        except Exception:
-            pass
-
-        # Strategy 2: DOM text nodes
+        
+        # Strategy 1: DOM text nodes
+        # We do this FIRST because the DOM reflects the currently active "variant". 
+        # Tokopedia auto-selects variants via JS on page load based on URL.
         try:
             price_text = await page.evaluate(r"""
                 () => {
@@ -120,7 +116,19 @@ class TokopediaScraper(BaseScraper):
                 }
             """)
             if price_text:
-                return self.parse_price(price_text)
+                price = self.parse_price(price_text)
+                if price: return price
+        except Exception:
+            pass
+
+        # Strategy 2: Embedded JSON data in page source (Fallback)
+        # Warning: This is raw HTML. For products with variants, this often
+        # catches the first random variant in the hidden JSON payload.
+        try:
+            content = await page.content()
+            price = self._extract_from_html(content)
+            if price:
+                return price
         except Exception:
             pass
 
